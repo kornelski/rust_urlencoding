@@ -15,6 +15,23 @@ pub fn encode(data: &str) -> String {
     }
 }
 
+/// Precent-encodes every byte except alphanumerics and `-`, `_`, `.`, `~`.
+/// Writes everything to a mutable string.
+/// ```
+/// # use urlencoding::encode_to_mut_string;
+/// let mut s = "https://rust-lang.org?message=".to_string();
+/// encode_to_mut_string("👾 Exterminate!", &mut s);
+/// 
+/// assert_eq!(s, "https://rust-lang.org?message=%F0%9F%91%BE%20Exterminate%21");
+/// ```
+pub fn encode_to_mut_string(data: &str, escaped: &mut String) {
+    escaped.reserve(data.len());
+    // Encoded string is guaranteed to be ASCII
+    let escaped = unsafe { escaped.as_mut_vec() };
+    encode_into(data, escaped).unwrap();
+}
+
+/// Writes the escaped data to an Writer.
 #[inline]
 fn encode_into<W: Write>(data: &str, mut escaped: W) -> io::Result<()> {
     for byte in data.as_bytes().iter() {
@@ -120,7 +137,7 @@ impl Display for FromUrlEncodingError {
 
 #[cfg(test)]
 mod tests {
-    use super::encode;
+    use super::{encode, encode_to_mut_string};
     use super::decode;
     use super::from_hex_digit;
 
@@ -135,6 +152,15 @@ mod tests {
         let emoji_string = "👾 Exterminate!";
         let expected = "%F0%9F%91%BE%20Exterminate%21";
         assert_eq!(expected, encode(emoji_string));
+    }
+
+    #[test]
+    fn it_encodes_to_a_mut_string() {
+        let emoji_string = "👾 Exterminate!";
+        let expected = "%F0%9F%91%BE%20Exterminate%21";
+        let mut s = String::new();
+        encode_to_mut_string(emoji_string, &mut s);
+        assert_eq!(expected, s);
     }
 
     #[test]
