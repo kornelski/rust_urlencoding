@@ -27,20 +27,21 @@ pub fn decode(data: &str) -> Result<Cow<str>, FromUtf8Error> {
 ///
 /// Unencoded `+` is preserved literally, and _not_ changed to a space.
 pub fn decode_binary(mut data: &[u8]) -> Cow<[u8]> {
-    let mut out: Vec<u8> = Vec::with_capacity(data.len());
+    let mut decoded: Vec<u8> = Vec::with_capacity(data.len());
+    let mut out = NeverRealloc(&mut decoded);
     loop {
         let mut parts = data.splitn(2, |&c| c == b'%');
         // first the decoded non-% part
-        out.extend_from_slice(parts.next().unwrap());
+        let non_escaped_part = parts.next().unwrap();
+        let rest = parts.next();
+        if rest.is_none() && out.0.is_empty() {
+            // if empty there were no '%' in the string
+            return data.into();
+        }
+        out.extend_from_slice(non_escaped_part);
+
         // then decode one %xx
-        match parts.next() {
-            None => {
-                if out.is_empty() {
-                    // avoids utf-8 check
-                    return data.into();
-                }
-                break;
-            },
+        match rest {
             Some(rest) => match rest.get(0..2) {
                 Some(&[first, second]) => match from_hex_digit(first) {
                     Some(first_val) => match from_hex_digit(second) {
@@ -65,7 +66,28 @@ pub fn decode_binary(mut data: &[u8]) -> Cow<[u8]> {
                     break;
                 },
             },
-        };
+            None => break,
+        }
     }
-    Cow::Owned(out)
+    Cow::Owned(decoded)
+}
+
+
+struct NeverRealloc<'a, T>(pub &'a mut Vec<T>);
+
+impl<T> NeverRealloc<'_, T> {
+    #[inline]
+    pub fn push(&mut self, val: T) {
+        // these branches only exist to remove redundant reallocation code
+        // (the capacity is always sufficient)
+        if self.0.len() != self.0.capacity() {
+            self.0.push(val);
+        }
+    }
+    #[inline]
+    pub fn extend_from_slice(&mut self, val: &[T]) where T: Clone {
+        if self.0.capacity() - self.0.len() >= val.len() {
+            self.0.extend_from_slice(val);
+        }
+    }
 }

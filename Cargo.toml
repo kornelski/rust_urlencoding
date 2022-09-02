@@ -1,6 +1,6 @@
 [package]
 name = "urlencoding"
-version = "2.1.0"
+version = "2.1.2"
 authors = ["Kornel <kornel@geekhood.net>", "Bertram Truong <b@bertramtruong.com>"]
 categories = ["encoding", "web-programming"]
 description = "A Rust library for doing URL percentage encoding."
@@ -13,3 +13,6 @@ edition = "2018"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
+
+[badges]
+maintenance = { status = "passively-maintained" }
