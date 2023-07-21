@@ -45,7 +45,7 @@ impl<Str: AsRef<[u8]>> Encoded<Str> {
     /// Perform urlencoding into a string
     #[inline]
     pub fn append_to(&self, string: &mut String) {
-        append_string(&self.0.as_ref(), string, false);
+        append_string(self.0.as_ref(), string, false);
     }
 }
 
@@ -89,7 +89,10 @@ pub fn encode_binary(data: &[u8]) -> Cow<str> {
 }
 
 fn append_string(data: &[u8], escaped: &mut String, may_skip: bool) -> bool {
-    encode_into(data, may_skip, |s| Ok::<_, std::convert::Infallible>(escaped.push_str(s))).unwrap()
+    encode_into(data, may_skip, |s| {
+        escaped.push_str(s);
+        Ok::<_, std::convert::Infallible>(())
+    }).unwrap()
 }
 
 fn encode_into<E>(mut data: &[u8], may_skip_write: bool, mut push_str: impl FnMut(&str) -> Result<(), E>) -> Result<bool, E> {

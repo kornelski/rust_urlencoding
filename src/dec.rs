@@ -26,9 +26,18 @@ pub fn decode(data: &str) -> Result<Cow<str>, FromUtf8Error> {
 /// Decode percent-encoded string as binary data, in any encoding.
 ///
 /// Unencoded `+` is preserved literally, and _not_ changed to a space.
-pub fn decode_binary(mut data: &[u8]) -> Cow<[u8]> {
+pub fn decode_binary(data: &[u8]) -> Cow<[u8]> {
+    let offset = data.iter().take_while(|&&c| c != b'%').count();
+    if offset >= data.len() {
+        return Cow::Borrowed(data)
+    }
+
     let mut decoded: Vec<u8> = Vec::with_capacity(data.len());
     let mut out = NeverRealloc(&mut decoded);
+
+    let (ascii, mut data) = data.split_at(offset);
+    out.extend_from_slice(ascii);
+
     loop {
         let mut parts = data.splitn(2, |&c| c == b'%');
         // first the decoded non-% part
@@ -90,4 +99,11 @@ impl<T> NeverRealloc<'_, T> {
             self.0.extend_from_slice(val);
         }
     }
+}
+
+#[test]
+fn dec_borrows() {
+    assert!(matches!(decode("hello"), Ok(Cow::Borrowed("hello"))));
+    assert!(matches!(decode("hello%20"), Ok(Cow::Owned(s)) if s == "hello "));
+    assert!(matches!(decode("%20hello"), Ok(Cow::Owned(s)) if s == " hello"));
 }
