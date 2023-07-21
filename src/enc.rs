@@ -1,7 +1,5 @@
 use std::borrow::Cow;
-use std::fmt;
-use std::io;
-use std::str;
+use std::{fmt, io, str};
 
 /// Wrapper type that implements `Display`. Encodes on the fly, without allocating.
 /// Percent-encodes every byte except alphanumerics and `-`, `_`, `.`, `~`. Assumes UTF-8 encoding.
@@ -24,7 +22,7 @@ impl<Str: AsRef<[u8]>> Encoded<Str> {
     }
 
     #[inline(always)]
-    pub fn to_str(&self) -> Cow<str> {
+    pub fn to_str(&self) -> Cow<'_, str> {
         encode_binary(self.0.as_ref())
     }
 
@@ -53,13 +51,14 @@ impl<'a> Encoded<&'a str> {
     /// Same as new, but hints a more specific type, so you can avoid errors about `AsRef<[u8]>` not implemented
     /// on references-to-references.
     #[inline(always)]
+    #[must_use]
     pub fn str(string: &'a str) -> Self {
         Self(string)
     }
 }
 
 impl<String: AsRef<[u8]>> fmt::Display for Encoded<String> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         encode_into(self.0.as_ref(), false, |s| f.write_str(s))?;
         Ok(())
     }
@@ -69,13 +68,15 @@ impl<String: AsRef<[u8]>> fmt::Display for Encoded<String> {
 ///
 /// Call `.into_owned()` if you need a `String`
 #[inline(always)]
-pub fn encode(data: &str) -> Cow<str> {
+#[must_use]
+pub fn encode(data: &str) -> Cow<'_, str> {
     encode_binary(data.as_bytes())
 }
 
 /// Percent-encodes every byte except alphanumerics and `-`, `_`, `.`, `~`.
 #[inline]
-pub fn encode_binary(data: &[u8]) -> Cow<str> {
+#[must_use]
+pub fn encode_binary(data: &[u8]) -> Cow<'_, str> {
     // add maybe extra capacity, but try not to exceed allocator's bucket size
     let mut escaped = String::with_capacity(data.len() | 15);
     let unmodified = append_string(data, &mut escaped, true);
@@ -123,7 +124,7 @@ fn encode_into<E>(mut data: &[u8], may_skip_write: bool, mut push_str: impl FnMu
                 let enc = &[b'%', to_hex_digit(byte >> 4), to_hex_digit(byte & 15)];
                 push_str(unsafe { str::from_utf8_unchecked(enc) })?;
                 data = rest;
-            }
+            },
             None => break,
         };
     }

@@ -2,23 +2,23 @@
 
 [![Latest Version](https://img.shields.io/crates/v/urlencoding.svg)](https://lib.rs/crates/urlencoding)
 
-A tiny Rust library for doing URL percentage encoding and decoding. It percent-encodes everything except alphanumerics and `-`, `_`, `.`, `~`.
+A tiny Rust library for performing encoding and decoding of URL paths and arguments. It percent-encodes everything except alphanumerics and `-`, `_`, `.`, `~`.
 
 When decoding `+` is not treated as a space. Error recovery from incomplete percent-escapes follows the [WHATWG URL standard](https://url.spec.whatwg.org/).
 
 ## Usage
 
-To encode a string, do the following:
+To encode a string, use the following:
 
 ```rust
 use urlencoding::encode;
 
-let encoded = encode("This string will be URL encoded.");
+let encoded = encode("This string will be encoded to be URI-safe.");
 println!("{}", encoded);
-// This%20string%20will%20be%20URL%20encoded.
+// This%20string%20will%20be%20encoded%20to%20be%20URI-safe.
 ```
 
-To decode a string, it's only slightly different:
+Decoding to a string supports UTF-8:
 
 ```rust
 use urlencoding::decode;
@@ -38,6 +38,15 @@ let decoded = String::from_utf8_lossy(&binary);
 ```
 
 This library returns [`Cow`](https://doc.rust-lang.org/stable/std/borrow/enum.Cow.html) to avoid allocating when decoding/encoding is not needed. Call `.into_owned()` on the `Cow` to get a `Vec` or `String`.
+
+[Encoding](https://docs.rs/urlencoding/latest/urlencoding/struct.Encoded.html) can also avoid unnecesary allocations:
+
+```rust
+use urlencoding::Encoded;
+
+format!("https://lib.rs?q={}", Encoded("argument encoded without a temporay string"));
+// https://lib.rs?q=argument%20encoded%20without%20a%20temporay%20string
+```
 
 ## License
 

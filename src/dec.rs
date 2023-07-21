@@ -16,7 +16,7 @@ pub(crate) fn from_hex_digit(digit: u8) -> Option<u8> {
 /// If you need a `String`, call `.into_owned()` (not `.to_owned()`).
 ///
 /// Unencoded `+` is preserved literally, and _not_ changed to a space.
-pub fn decode(data: &str) -> Result<Cow<str>, FromUtf8Error> {
+pub fn decode(data: &str) -> Result<Cow<'_, str>, FromUtf8Error> {
     match decode_binary(data.as_bytes()) {
         Cow::Borrowed(_) => Ok(Cow::Borrowed(data)),
         Cow::Owned(s) => Ok(Cow::Owned(String::from_utf8(s)?)),
@@ -26,10 +26,11 @@ pub fn decode(data: &str) -> Result<Cow<str>, FromUtf8Error> {
 /// Decode percent-encoded string as binary data, in any encoding.
 ///
 /// Unencoded `+` is preserved literally, and _not_ changed to a space.
-pub fn decode_binary(data: &[u8]) -> Cow<[u8]> {
+#[must_use]
+pub fn decode_binary(data: &[u8]) -> Cow<'_, [u8]> {
     let offset = data.iter().take_while(|&&c| c != b'%').count();
     if offset >= data.len() {
-        return Cow::Borrowed(data)
+        return Cow::Borrowed(data);
     }
 
     let mut decoded: Vec<u8> = Vec::with_capacity(data.len());
@@ -51,36 +52,32 @@ pub fn decode_binary(data: &[u8]) -> Cow<[u8]> {
 
         // then decode one %xx
         match rest {
-            Some(rest) => match rest.get(0..2) {
-                Some(&[first, second]) => match from_hex_digit(first) {
-                    Some(first_val) => match from_hex_digit(second) {
-                        Some(second_val) => {
+            Some(rest) => {
+                if let Some(&[first, second]) = rest.get(0..2) {
+                    if let Some(first_val) = from_hex_digit(first) {
+                        if let Some(second_val) = from_hex_digit(second) {
                             out.push((first_val << 4) | second_val);
                             data = &rest[2..];
-                        },
-                        None => {
+                        } else {
                             out.extend_from_slice(&[b'%', first]);
                             data = &rest[1..];
-                        },
-                    },
-                    None => {
+                        }
+                    } else {
                         out.push(b'%');
                         data = rest;
-                    },
-                },
-                _ => {
+                    }
+                } else {
                     // too short
                     out.push(b'%');
                     out.extend_from_slice(rest);
                     break;
-                },
+                }
             },
             None => break,
         }
     }
     Cow::Owned(decoded)
 }
-
 
 struct NeverRealloc<'a, T>(pub &'a mut Vec<T>);
 
@@ -93,6 +90,7 @@ impl<T> NeverRealloc<'_, T> {
             self.0.push(val);
         }
     }
+
     #[inline]
     pub fn extend_from_slice(&mut self, val: &[T]) where T: Clone {
         if self.0.capacity() - self.0.len() >= val.len() {

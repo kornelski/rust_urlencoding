@@ -30,13 +30,10 @@
 //! This library returns [`Cow`](https://doc.rust-lang.org/stable/std/borrow/enum.Cow.html) to avoid allocating when decoding/encoding is not needed. Call `.into_owned()` on the `Cow` to get a `Vec` or `String`.
 
 mod enc;
-pub use enc::encode;
-pub use enc::encode_binary;
-pub use enc::Encoded;
+pub use enc::{encode, encode_binary, Encoded};
 
 mod dec;
-pub use dec::decode;
-pub use dec::decode_binary;
+pub use dec::{decode, decode_binary};
 
 #[cfg(test)]
 mod tests {
@@ -76,7 +73,6 @@ mod tests {
 
         assert_eq!(bad_encoded_string, decode(bad_encoded_string).unwrap());
     }
-
 
     #[test]
     fn misc() {
@@ -129,5 +125,4 @@ mod tests {
         assert_eq!(encode("‽"), "%E2%80%BD");
         assert_eq!(encode("Say what‽"), "Say%20what%E2%80%BD");
     }
-
 }
