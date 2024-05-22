@@ -1,18 +1,19 @@
 [package]
 name = "urlencoding"
-version = "2.1.2"
+version = "2.1.4"
 authors = ["Kornel <kornel@geekhood.net>", "Bertram Truong <b@bertramtruong.com>"]
 categories = ["encoding", "web-programming"]
-description = "A Rust library for doing URL percentage encoding."
-homepage = "https://lib.rs/urlencoding"
-keywords = ["url", "percent", "escape", "urlencode", "urldecode"]
+description = "A minimal library for percent-encoding of URLs"
+homepage = "https://lib.rs/crates/urlencoding"
+keywords = ["url", "percent", "escaping", "urlencode", "urldecode"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/kornelski/rust_urlencoding"
-edition = "2018"
+edition = "2021"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
+rustdoc-args = ["--generate-link-to-definition"]
 
 [badges]
-maintenance = { status = "passively-maintained" }
+maintenance = { status = "as-is" }
