@@ -78,7 +78,8 @@ pub fn encode(data: &str) -> Cow<'_, str> {
 #[must_use]
 pub fn encode_binary(data: &[u8]) -> Cow<'_, str> {
     // add maybe extra capacity, but try not to exceed allocator's bucket size
-    let mut escaped = String::with_capacity(data.len() | 15);
+    let mut escaped = String::new();
+    let _ = escaped.try_reserve(data.len() | 15);
     let unmodified = append_string(data, &mut escaped, true);
     if unmodified {
         return Cow::Borrowed(unsafe {

@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::panic::panic_any;
 use std::string::FromUtf8Error;
 
 #[inline]
@@ -16,6 +17,7 @@ pub(crate) fn from_hex_digit(digit: u8) -> Option<u8> {
 /// If you need a `String`, call `.into_owned()` (not `.to_owned()`).
 ///
 /// Unencoded `+` is preserved literally, and _not_ changed to a space.
+#[inline]
 pub fn decode(data: &str) -> Result<Cow<'_, str>, FromUtf8Error> {
     match decode_binary(data.as_bytes()) {
         Cow::Borrowed(_) => Ok(Cow::Borrowed(data)),
@@ -33,7 +35,10 @@ pub fn decode_binary(data: &[u8]) -> Cow<'_, [u8]> {
         return Cow::Borrowed(data);
     }
 
-    let mut decoded: Vec<u8> = Vec::with_capacity(data.len());
+    let mut decoded = Vec::new();
+    if decoded.try_reserve(data.len()).is_err() {
+        panic_any("OOM"); // more efficient codegen than built-in OOM handler
+    }
     let mut out = NeverRealloc(&mut decoded);
 
     let (ascii, mut data) = data.split_at(offset);
